@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Game</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+    </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const coinImg = new Image(); coinImg.src = 'assets/coin.png';
+    const backgroundImg = new Image(); backgroundImg.src = 'assets/bg.png';
+
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let score = 0;
+    let state = 1; // 1 - игра, 2 - конец
+
+const player = {
+        // Увеличиваем радиус с 25 до 35
+        x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.25, jump: -5.5,
+        
+        reset() { this.y = 300; this.velocity = 0; },
+        
+        update() { 
+            this.velocity += this.gravity; 
+            this.y += this.velocity; 
+            
+            if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
+                state = 2;
+            }
+        },
+        
+        // Увеличиваем размер картинки с 50x50 до 70x70
+        // (x - 35, y - 35 — чтобы центр картинки совпадал с центром радиуса)
+        draw() { ctx.drawImage(coinImg, this.x - 35, this.y - 35, 70, 70); }
+    };
+
+    function drawNeoPillar(x, y, w, h) {
+        ctx.fillStyle = "#1a001a"; ctx.strokeStyle = "#ff007f"; 
+        ctx.lineWidth = 4; ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
+    }
+
+    const pipes = {
+        list: [], lastY: 300, width: 80, gap: 200,
+        reset() { this.list = []; this.lastY = 300; },
+        update() {
+            if (this.list.length === 0 || canvas.width - this.list[this.list.length - 1].x >= 250) {
+                let newY = this.lastY + (Math.random() * 200 - 100);
+                newY = Math.max(50, Math.min(newY, canvas.height - this.gap - 50));
+                this.lastY = newY;
+                this.list.push({ x: canvas.width, y: newY, passed: false });
+            }
+            for (let i = 0; i < this.list.length; i++) {
+                let p = this.list[i];
+                p.x -= 3;
+                if (p.x + this.width < player.x && !p.passed) { score++; p.passed = true; }
+                if (p.x + this.width <= 0) { this.list.shift(); i--; }
+                if (player.x > p.x && player.x < p.x + this.width && (player.y < p.y || player.y > p.y + this.gap)) state = 2;
+            }
+        },
+        draw() {
+            for (let p of this.list) {
+                drawNeoPillar(p.x, 0, this.width, p.y);
+                drawNeoPillar(p.x, p.y + this.gap, this.width, canvas.height - (p.y + this.gap));
+            }
+        }
+    };
+
+    function loop() {
+        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+        if (state === 1) {
+            player.update();
+            pipes.update();
+            pipes.draw();
+            player.draw();
+            ctx.fillStyle = "#fff"; ctx.font = "40px Arial"; ctx.fillText(score, 20, 50);
+} else {
+            ctx.fillStyle = "#fff"; ctx.font = "30px Arial";
+            ctx.textAlign = "center"; // Добавляем центрирование текста
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
+            
+            // --- ДОБАВЛЕННЫЙ БЛОК СЧЕТА ---
+            ctx.font = "40px Arial";
+            ctx.fillText("Ваш счёт: " + score, canvas.width / 2, canvas.height / 2 + 10);
+            // ------------------------------
+            
+            ctx.font = "20px Arial";
+            ctx.fillText("Нажми, чтобы начать", canvas.width / 2, canvas.height / 2 + 70);
+        }
+        requestAnimationFrame(loop);
+    }
+
+    window.addEventListener("mousedown", () => {
+        if (state === 2) {
+            score = 0;
+            state = 1;
+            player.reset();
+            pipes.reset();
+        } else {
+            player.velocity = player.jump;
+        }
+    });
+
+    loop();
+</script>
+</body>
+</html>

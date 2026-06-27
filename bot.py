@@ -11,7 +11,7 @@ import sqlite3
 # ================= НАСТРОЙКИ =================
 BOT_TOKEN = "8702014027:AAEN5quGp1uSH45Xaa3W-HOmSTEPYjn4d8o"
 CHANNEL_USERNAME = "ilyshatgk"
-GAME_URL = "https://confity127-tech.github.io/flappy-ton/?v=4"
+GAME_URL = "https://confity127-tech.github.io/flappy-ton/?v=5"
 # =============================================
 
 logging.basicConfig(level=logging.INFO)

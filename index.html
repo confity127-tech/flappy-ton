@@ -27,7 +27,7 @@
 
 const player = {
         // Увеличиваем радиус с 25 до 35
-x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.15, jump: -4.5,
+x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.2, jump: -5.0,
         
  reset() { 
     this.y = canvas.height / 2; 
@@ -113,9 +113,9 @@ x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.15, jump: -4.5,
             state = 1;
             player.reset();
             pipes.reset();
-        } else {
-            player.velocity = player.jump;
-        }
+  } else if (state === 1) {
+    player.velocity = -5.0; // Тут должно быть то же число, что и в jump!
+}
     });
     function handleInput() {
     if (state === 2) {

@@ -28,12 +28,19 @@
 
         let score = 0;
         let state = 1; // 1 - игра, 2 - конец
+        let pipes = [];
+        let frameCount = 0;
 
-        // Физика птички (сбалансированная и быстрая)
+        // Константы для настройки баланса игры
+        const PIPE_SPEED = 3.5;  // Высокая скорость движения труб
+        const PIPE_SPAWN_RATE = 90; // Как часто появляются трубы (каждые 90 кадров)
+        const PIPE_GAP = 160;   // Расстояние между верхней и нижней трубой (комфортный проем)
+
+        // Физика птички (TON монетки)
         const player = {
-            x: 100,
+            x: 80,
             y: canvas.height / 2,
-            radius: 35,
+            radius: 25, // Оптимальный размер для монетки TON
             velocity: 0,
             gravity: 0.23,
             jump: -5.3,
@@ -41,7 +48,9 @@
             reset() {
                 this.y = canvas.height / 2;
                 this.velocity = 0;
-                score = 0; // СБРОС СЧЁТЧИКА
+                score = 0;
+                pipes = [];
+                frameCount = 0;
             },
 
             update() {
@@ -57,15 +66,76 @@
             },
 
             draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = "#0088cc"; // Временный синий круг вместо спрайта птицы
-                ctx.fill();
-                ctx.closePath();
+                if (coinImg.complete) {
+                    // Рисуем значок TON (монетку)
+                    ctx.drawImage(coinImg, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+                } else {
+                    // Запасной вариант, если картинка не прогрузилась
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = "#0088cc";
+                    ctx.fill();
+                    ctx.closePath();
+                }
             }
         };
 
-        // Управление для ПК и Телефонов
+        // Логика труб
+        function updatePipes() {
+            if (state !== 1) return;
+
+            frameCount++;
+            if (frameCount % PIPE_SPAWN_RATE === 0) {
+                let minHeight = 50;
+                let maxHeight = canvas.height - PIPE_GAP - 50;
+                let topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+
+                pipes.push({
+                    x: canvas.width,
+                    top: topHeight,
+                    bottom: canvas.height - topHeight - PIPE_GAP,
+                    width: 60,
+                    passed: false
+                });
+            }
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= PIPE_SPEED;
+
+                // Проверка столкновения монетки с трубами
+                if (
+                    player.x + player.radius > pipes[i].x &&
+                    player.x - player.radius < pipes[i].x + pipes[i].width
+                ) {
+                    if (player.y - player.radius < pipes[i].top || player.y + player.radius > canvas.height - pipes[i].bottom) {
+                        state = 2; // Конец игры при ударе
+                    }
+                }
+
+                // Начисление очков
+                if (!pipes[i].passed && pipes[i].x + pipes[i].width < player.x) {
+                    score++;
+                    pipes[i].passed = true;
+                }
+
+                // Удаление улетевших труб
+                if (pipes[i].x + pipes[i].width < 0) {
+                    pipes.splice(i, 1);
+                }
+            }
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = "#0088cc"; // Цвет труб (можно настроить под общий стиль)
+            for (let i = 0; i < pipes.length; i++) {
+                // Верхняя труба
+                ctx.fillRect(pipes[i].x, 0, pipes[i].width, pipes[i].top);
+                // Нижняя труба
+                ctx.fillRect(pipes[i].x, canvas.height - pipes[i].bottom, pipes[i].width, pipes[i].bottom);
+            }
+        }
+
+        // Управление
         function handleInput() {
             if (state === 2) {
                 player.reset();
@@ -83,8 +153,9 @@
 
         // Главный игровой цикл
         function loop() {
-            // Очистка холста и отрисовка фона
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Отрисовка фона
             if (backgroundImg.complete) {
                 ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
             } else {
@@ -92,15 +163,18 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Обновление и отрисовка игрока
+            // Обновление и отрисовка объектов
+            updatePipes();
+            drawPipes();
             player.update();
             player.draw();
 
-            // Отрисовка интерфейса счета
+            // Отрисовка счета
             ctx.fillStyle = "white";
             ctx.font = "bold 40px Arial";
             ctx.fillText(score, 30, 60);
 
+            // Экран GAME OVER
             if (state === 2) {
                 ctx.fillStyle = "white";
                 ctx.font = "bold 40px Arial";
@@ -109,14 +183,14 @@
                 ctx.font = "24px Arial";
                 ctx.fillText("Ваш счёт: " + score, canvas.width / 2, canvas.height / 2 + 20);
                 ctx.fillText("Нажми, чтобы начать", canvas.width / 2, canvas.height / 2 + 70);
-                ctx.textAlign = "left"; // сброс выравнивания
+                ctx.textAlign = "left";
             }
 
             requestAnimationFrame(loop);
         }
 
-        // ГАРАНТИРОВАННЫЙ ЗАПУСК ЦИКЛА
         loop();
     </script>
 </body>
+</html>
 </html>

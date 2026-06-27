@@ -26,13 +26,8 @@ function onImageLoad() {
     }
 }
 
-const coinImg = new Image();
-coinImg.onload = onImageLoad; // Привязываем функцию загрузки
-coinImg.src = 'assets/coin.png';
-
-const backgroundImge = new Image();
-backgroundImge.onload = onImageLoad; // Привязываем функцию загрузки
-backgroundImge.src = 'assets/bg.png';
+const coinImg = new Image(); coinImg.src = 'assets/coin.png';
+const backgroundImg = new Image(); backgroundImg.src = 'assets/bg.png';;
 
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize);
@@ -77,20 +72,31 @@ reset() {
     const pipes = {
         list: [], lastY: 300, width: 80, gap: 200,
         reset() { this.list = []; this.lastY = 300; },
-        update() {
-            if (this.list.length === 0 || canvas.width - this.list[this.list.length - 1].x >= 250) {
-                let newY = this.lastY + (Math.random() * 200 - 100);
-                newY = Math.max(50, Math.min(newY, canvas.height - this.gap - 50));
-                this.lastY = newY;
-                this.list.push({ x: canvas.width, y: newY, passed: false });
-            }
-            for (let i = 0; i < this.list.length; i++) {
-                let p = this.list[i];
-                p.x -= 3;
-                if (p.x + this.width < player.x && !p.passed) { score++; p.passed = true; }
-                if (p.x + this.width <= 0) { this.list.shift(); i--; }
-                if (player.x > p.x && player.x < p.x + this.width && (player.y < p.y || player.y > p.y + this.gap)) state = 2;
-            }
+       update() {
+    try {
+        // Сюда мы прячем весь старый код твоего update()
+        if (typeof state === 'undefined' || state !== 1) return;
+
+        this.velocity += this.gravity;
+        this.y += this.velocity;
+
+        // Проверка столкновений (на всякий случай)
+        if (typeof canvas !== 'undefined') {
+             if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
+                state = 2; // GAME OVER
+             }
+        }
+    } catch (e) {
+        // ЕСЛИ ЧТО-ТО СЛОМАЛОСЬ, ПИШЕМ ОШИБКУ НА ЭКРАН
+        if (typeof ctx !== 'undefined') {
+            ctx.fillStyle = "white";
+            ctx.font = "30px Arial";
+            ctx.fillText("Ошибка JS:", 20, 50);
+            ctx.fillText(e.message, 20, 100); // Здесь будет видна реальная ошибка
+        }
+        console.error(e); // И в консоль браузера тоже
+    }
+},
         },
         draw() {
             for (let p of this.list) {

@@ -31,14 +31,18 @@ x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.15, jump: -4.5,
         
         reset() { this.y = 300; this.velocity = 0; },
         
-        update() { 
-            this.velocity += this.gravity; 
-            this.y += this.velocity; 
-            
-            if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
-                state = 2;
-            }
-        },
+        update() {
+    // Выходим из функции и ничего не считаем, если игра еще не началась или уже закончилась
+    if (state !== 1) return;
+
+    this.velocity += this.gravity;
+    this.y += this.velocity;
+
+    // Проверка падения на пол или вылета за потолок
+    if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
+        state = 2; // GAME OVER
+    }
+},
         
         // Увеличиваем размер картинки с 50x50 до 70x70
         // (x - 35, y - 35 — чтобы центр картинки совпадал с центром радиуса)

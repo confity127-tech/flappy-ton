@@ -29,7 +29,10 @@ const player = {
         // Увеличиваем радиус с 25 до 35
 x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.15, jump: -4.5,
         
-        reset() { this.y = 300; this.velocity = 0; },
+ reset() { 
+    this.y = canvas.height / 2; 
+    this.velocity = 0; 
+},
         
         update() {
     // Выходим из функции и ничего не считаем, если игра еще не началась или уже закончилась
@@ -114,6 +117,24 @@ x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.15, jump: -4.5,
             player.velocity = player.jump;
         }
     });
+    function handleInput() {
+    if (state === 2) {
+        // Если был GAME OVER - сбрасываем игру, возвращаем птичку в центр и включаем активный режим
+        player.reset();
+        state = 1;
+    } else if (state === 1) {
+        // Если игра идет - птичка прыгает. 
+        // Подбери силу прыжка под уменьшенную гравитацию (например, -4 или -4.5)
+        player.velocity = -4.5; 
+    }
+}
+
+// Слушаем и клики мышки (для ПК), и тапы пальцем (для телефонов)
+window.addEventListener('click', handleInput);
+window.addEventListener('touchstart', function(e) {
+    e.preventDefault(); // Предотвращает лишний двойной зум экрана на телефонах
+    handleInput();
+});
 
     loop();
 </script>

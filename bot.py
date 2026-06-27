@@ -5,15 +5,29 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession # <-- Импортируем сессию
 import sqlite3
 
+# ================= НАСТРОЙКИ =================
 BOT_TOKEN = "8702014027:AAEN5quGp1uSH45Xaa3W-HOmSTEPYjn4d8o"
-CHANNEL_USERNAME = "ilyshatgk" 
-GAME_URL = "https://confity127-tech.github.io/flappy-ton/"
+CHANNEL_USERNAME = "ilyshatgk"
+GAME_URL = "https://confity127-tech.github.io/flappy-ton/?v=4"
+# =============================================
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
+from aiogram.client.session.aiohttp import AiohttpSession
+
+# Инициализируем сессию с прокси-сервером хостинга
+session = AiohttpSession(proxy="http://proxy.server:3128")
+
+# Передаем токен, сессию и прокси прямо в объект Bot
+bot = Bot(
+    token=BOT_TOKEN,
+    session=session,
+    proxy="http://proxy.server:3128",
+    default=DefaultBotProperties(parse_mode="HTML")
+)
 dp = Dispatcher()
 
 # Инициализация Базы Данных
@@ -41,13 +55,13 @@ async def check_subscription(user_id: int) -> bool:
     except Exception as e:
         logging.error(f"Ошибка проверки подписки: {e}")
         # Если канал еще не создан или бота там нет в админах, временно пропускаем
-        return True 
+        return True
 
 @dp.message(Command("start"))
 async def start_cmd(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username or "Anonymous"
-    
+
     # Сохраняем пользователя в БД
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
@@ -56,7 +70,7 @@ async def start_cmd(message: Message):
     conn.close()
 
     is_subscribed = await check_subscription(user_id)
-    
+
     if not is_subscribed:
         # Если не подписан — требуем подписку
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -86,22 +100,22 @@ async def handle_game_data(message: Message):
         data = json.loads(message.web_app_data.data)
         score = int(data.get("score", 0))
         user_id = message.from_user.id
-        
+
         conn = sqlite3.connect("users.db")
         cursor = conn.cursor()
-        
+
         # Получаем текущий рекорд
         cursor.execute("SELECT high_score FROM users WHERE user_id = ?", (user_id,))
         res = cursor.fetchone()
         current_high = res[0] if res else 0
-        
+
         if score > current_high:
             cursor.execute("UPDATE users SET high_score = ? WHERE user_id = ?", (score, user_id))
             conn.commit()
             await message.answer(f"🔥 НОВЫЙ РЕКОРД! Ты набрал {score} очков! Результат сохранен в таблицу лидеров.")
         else:
             await message.answer(f"Игра окончена! Твой результат: {score} очков. Твой лучший рекорд: {current_high}.")
-            
+
         conn.close()
     except Exception as e:
         logging.error(f"Ошибка обработки данных игры: {e}")

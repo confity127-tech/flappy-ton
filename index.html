@@ -3,165 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Game</title>
+    <title>Flappy Ton</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-        canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+        body, html { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; background: #000; }
+        canvas { display: block; width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
-<script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-    let imagesLoaded = 0;
-const totalImages = 2; // У нас bg.png и coin.png
+        // Загрузка ресурсов
+        const coinImg = new Image(); coinImg.src = 'assets/coin.png';
+        const backgroundImg = new Image(); backgroundImg.src = 'assets/bg.png';
 
-function onImageLoad() {
-    imagesLoaded++;
-    if (imagesLoaded === totalImages) {
-        // Все картинки загружены — только теперь запускаем игру
-        loop(); 
-    }
-}
-
-const coinImg = new Image(); coinImg.src = 'assets/coin.png';
-const backgroundImg = new Image(); backgroundImg.src = 'assets/bg.png';;
-
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.addEventListener('resize', resize);
-    resize();
-
-    let score = 0;
-    let state = 1; // 1 - игра, 2 - конец
-
-const player = {
-        // Увеличиваем радиус с 25 до 35
-x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.23, jump: -5.3,
-
-reset() { 
-    this.y = canvas.height / 2; 
-    this.velocity = 0; 
-    score = 0; // ОБНУЛЯЕМ СЧЁТ ПРИ ПЕРЕЗАПУСКЕ!
-},
-        
-        update() {
-    // Выходим из функции и ничего не считаем, если игра еще не началась или уже закончилась
-    if (state !== 1) return;
-
-    this.velocity += this.gravity;
-    this.y += this.velocity;
-
-    // Проверка падения на пол или вылета за потолок
-    if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
-        state = 2; // GAME OVER
-    }
-},
-        
-        // Увеличиваем размер картинки с 50x50 до 70x70
-        // (x - 35, y - 35 — чтобы центр картинки совпадал с центром радиуса)
-        draw() { ctx.drawImage(coinImg, this.x - 35, this.y - 35, 70, 70); }
-    };
-
-    function drawNeoPillar(x, y, w, h) {
-        ctx.fillStyle = "#1a001a"; ctx.strokeStyle = "#ff007f"; 
-        ctx.lineWidth = 4; ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
-    }
-
-    const pipes = {
-        list: [], lastY: 300, width: 80, gap: 200,
-        reset() { this.list = []; this.lastY = 300; },
-       update() {
-    try {
-        // Сюда мы прячем весь старый код твоего update()
-        if (typeof state === 'undefined' || state !== 1) return;
-
-        this.velocity += this.gravity;
-        this.y += this.velocity;
-
-        // Проверка столкновений (на всякий случай)
-        if (typeof canvas !== 'undefined') {
-             if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
-                state = 2; // GAME OVER
-             }
+        function resize() { 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight; 
         }
-    } catch (e) {
-        // ЕСЛИ ЧТО-ТО СЛОМАЛОСЬ, ПИШЕМ ОШИБКУ НА ЭКРАН
-        if (typeof ctx !== 'undefined') {
-            ctx.fillStyle = "white";
-            ctx.font = "30px Arial";
-            ctx.fillText("Ошибка JS:", 20, 50);
-            ctx.fillText(e.message, 20, 100); // Здесь будет видна реальная ошибка
-        }
-        console.error(e); // И в консоль браузера тоже
-    }
-},
-        },
-        draw() {
-            for (let p of this.list) {
-                drawNeoPillar(p.x, 0, this.width, p.y);
-                drawNeoPillar(p.x, p.y + this.gap, this.width, canvas.height - (p.y + this.gap));
+        window.addEventListener('resize', resize);
+        resize();
+
+        let score = 0;
+        let state = 1; // 1 - игра, 2 - конец
+
+        // Физика птички (сбалансированная и быстрая)
+        const player = {
+            x: 100,
+            y: canvas.height / 2,
+            radius: 35,
+            velocity: 0,
+            gravity: 0.23,
+            jump: -5.3,
+
+            reset() {
+                this.y = canvas.height / 2;
+                this.velocity = 0;
+                score = 0; // СБРОС СЧЁТЧИКА
+            },
+
+            update() {
+                if (state !== 1) return;
+
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+
+                // Столкновение с полом или потолком
+                if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
+                    state = 2;
+                }
+            },
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "#0088cc"; // Временный синий круг вместо спрайта птицы
+                ctx.fill();
+                ctx.closePath();
+            }
+        };
+
+        // Управление для ПК и Телефонов
+        function handleInput() {
+            if (state === 2) {
+                player.reset();
+                state = 1;
+            } else if (state === 1) {
+                player.velocity = player.jump;
             }
         }
-    };
 
-    function loop() {
-        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-        if (state === 1) {
+        window.addEventListener('click', handleInput);
+        window.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            handleInput();
+        });
+
+        // Главный игровой цикл
+        function loop() {
+            // Очистка холста и отрисовка фона
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (backgroundImg.complete) {
+                ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = "#000";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Обновление и отрисовка игрока
             player.update();
-            pipes.update();
-            pipes.draw();
             player.draw();
-            ctx.fillStyle = "#fff"; ctx.font = "40px Arial"; ctx.fillText(score, 20, 50);
-} else {
-            ctx.fillStyle = "#fff"; ctx.font = "30px Arial";
-            ctx.textAlign = "center"; // Добавляем центрирование текста
-            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
-            
-            // --- ДОБАВЛЕННЫЙ БЛОК СЧЕТА ---
-            ctx.font = "40px Arial";
-            ctx.fillText("Ваш счёт: " + score, canvas.width / 2, canvas.height / 2 + 10);
-            // ------------------------------
-            
-            ctx.font = "20px Arial";
-            ctx.fillText("Нажми, чтобы начать", canvas.width / 2, canvas.height / 2 + 70);
+
+            // Отрисовка интерфейса счета
+            ctx.fillStyle = "white";
+            ctx.font = "bold 40px Arial";
+            ctx.fillText(score, 30, 60);
+
+            if (state === 2) {
+                ctx.fillStyle = "white";
+                ctx.font = "bold 40px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 20);
+                ctx.font = "24px Arial";
+                ctx.fillText("Ваш счёт: " + score, canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText("Нажми, чтобы начать", canvas.width / 2, canvas.height / 2 + 70);
+                ctx.textAlign = "left"; // сброс выравнивания
+            }
+
+            requestAnimationFrame(loop);
         }
-        requestAnimationFrame(loop);
-    }
 
-    window.addEventListener("mousedown", () => {
-        if (state === 2) {
-            score = 0;
-            state = 1;
-            player.reset();
-            pipes.reset();
-  } else if (state === 1) {
-    player.velocity = -5.0; // Тут должно быть то же число, что и в jump!
-}
-    });
-    function handleInput() {
-    if (state === 2) {
-        // Если был GAME OVER - сбрасываем игру, возвращаем птичку в центр и включаем активный режим
-        player.reset();
-        state = 1;
-    } else if (state === 1) {
-        // Если игра идет - птичка прыгает. 
-        // Подбери силу прыжка под уменьшенную гравитацию (например, -4 или -4.5)
-        player.velocity = -4.5; 
-    }
-}
-
-// Слушаем и клики мышки (для ПК), и тапы пальцем (для телефонов)
-window.addEventListener('click', handleInput);
-window.addEventListener('touchstart', function(e) {
-    e.preventDefault(); // Предотвращает лишний двойной зум экрана на телефонах
-    } else if (state === 1) {
-    player.velocity = -5.3; // Устанавливаем ту же скорость прыжка, что и в настройках player
-}
-});
-
-    loop();
-</script>
+        // ГАРАНТИРОВАННЫЙ ЗАПУСК ЦИКЛА
+        loop();
+    </script>
 </body>
 </html>

@@ -15,8 +15,24 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    const coinImg = new Image(); coinImg.src = 'assets/coin.png';
-    const backgroundImg = new Image(); backgroundImg.src = 'assets/bg.png';
+    let imagesLoaded = 0;
+const totalImages = 2; // У нас bg.png и coin.png
+
+function onImageLoad() {
+    imagesLoaded++;
+    if (imagesLoaded === totalImages) {
+        // Все картинки загружены — только теперь запускаем игру
+        loop(); 
+    }
+}
+
+const coinImg = new Image();
+coinImg.onload = onImageLoad; // Привязываем функцию загрузки
+coinImg.src = 'assets/coin.png';
+
+const backgroundImge = new Image();
+backgroundImge.onload = onImageLoad; // Привязываем функцию загрузки
+backgroundImge.src = 'assets/bg.png';
 
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize);

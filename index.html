@@ -29,34 +29,38 @@
         let score = 0;
         let state = 1; // 1 - игра, 2 - конец
         let pipes = [];
-        let frameCount = 0;
+        
+        // Переменные для независимого времени (Delta Time)
+        let lastTime = performance.now();
+        let spawnTimer = 0;
 
-        // НАСТРОЙКИ КОМФОРТНОЙ И ПРОСТОЙ ИГРЫ
-        const PIPE_SPEED = 2.0;      
-        const PIPE_SPAWN_RATE = 130; 
-        const PIPE_GAP = 190;        
+        // Базовые настройки подстраиваются под время (в расчете на идеальные 60 Гц)
+        const BASE_SPEED = 120;       // Скорость труб (пиксели в секунду)
+        const SPAWN_INTERVAL = 2.1;   // Появление труб каждые 2.1 секунды
+        const PIPE_GAP = 190;        // Большой комфортный проем
 
         const player = {
             x: 80,
             y: canvas.height / 2,
             radius: 23,              
             velocity: 0,
-            gravity: 0.16,           
-            jump: -4.2,              
+            gravity: 600,            // Гравитация в пикселях за секунду в квадрате
+            jump: -260,              // Сила прыжка
 
             reset() {
                 this.y = canvas.height / 2;
                 this.velocity = 0;
                 score = 0;
                 pipes = [];
-                frameCount = 0;
+                spawnTimer = 0;
             },
 
-            update() {
+            update(dt) {
                 if (state !== 1) return;
 
-                this.velocity += this.gravity;
-                this.y += this.velocity;
+                // Физика теперь зависит от dt (долей секунды)
+                this.velocity += this.gravity * dt;
+                this.y += this.velocity * dt;
 
                 if (this.y + this.radius >= canvas.height || this.y - this.radius <= 0) {
                     state = 2;
@@ -76,11 +80,11 @@
             }
         };
 
-        function updatePipes() {
+        function updatePipes(dt) {
             if (state !== 1) return;
 
-            frameCount++;
-            if (frameCount % PIPE_SPAWN_RATE === 0) {
+            spawnTimer += dt;
+            if (spawnTimer >= SPAWN_INTERVAL) {
                 let minHeight = 50;
                 let maxHeight = canvas.height - PIPE_GAP - 50;
                 let topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
@@ -92,10 +96,12 @@
                     width: 60,
                     passed: false
                 });
+                spawnTimer = 0;
             }
 
             for (let i = pipes.length - 1; i >= 0; i--) {
-                pipes[i].x -= PIPE_SPEED;
+                // Движение труб привязано ко времени dt
+                pipes[i].x -= BASE_SPEED * dt;
 
                 if (
                     player.x + player.radius > pipes[i].x &&
@@ -140,7 +146,13 @@
             handleInput();
         });
 
-        function loop() {
+        // Новый игровой цикл с расчетом времени дельты
+        function loop(timestamp) {
+            // Вычисляем dt (сколько секунд прошло с прошлого кадра)
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1; // Защита от огромных скачков при зависании
+            lastTime = timestamp;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             if (backgroundImg.complete) {
@@ -150,9 +162,10 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            updatePipes();
+            // Передаем дельту времени во все функции обновления
+            updatePipes(dt);
             drawPipes();
-            player.update();
+            player.update(dt);
             player.draw();
 
             ctx.fillStyle = "white";
@@ -173,7 +186,11 @@
             requestAnimationFrame(loop);
         }
 
-        loop();
+        // Запуск с передачей стартового времени
+        requestAnimationFrame(function(timestamp) {
+            lastTime = timestamp;
+            loop(timestamp);
+        });
     </script>
 </body>
 </html>

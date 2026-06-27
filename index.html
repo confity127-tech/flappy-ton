@@ -27,11 +27,12 @@
 
 const player = {
         // Увеличиваем радиус с 25 до 35
-x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.2, jump: -5.0,
-        
- reset() { 
+x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.23, jump: -5.3,
+
+reset() { 
     this.y = canvas.height / 2; 
     this.velocity = 0; 
+    score = 0; // ОБНУЛЯЕМ СЧЁТ ПРИ ПЕРЕЗАПУСКЕ!
 },
         
         update() {
@@ -133,7 +134,9 @@ x: 100, y: 300, radius: 35, velocity: 0, gravity: 0.2, jump: -5.0,
 window.addEventListener('click', handleInput);
 window.addEventListener('touchstart', function(e) {
     e.preventDefault(); // Предотвращает лишний двойной зум экрана на телефонах
-    handleInput();
+    } else if (state === 1) {
+    player.velocity = -5.3; // Устанавливаем ту же скорость прыжка, что и в настройках player
+}
 });
 
     loop();
